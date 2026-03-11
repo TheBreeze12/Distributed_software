@@ -3,7 +3,7 @@ from app.models.order import Order
 from decimal import Decimal
 
 def create_order(db:Session,u_id:int, p_id:int,quantity:int,order_amount:Decimal,status:int):
-    order=Order(u_id,p_id,quantity,order_amount,status)
+    order=Order(u_id=u_id,p_id=p_id,quantity=quantity,order_amount=order_amount,status=status)
     db.add(order)
     db.commit()
     db.refresh(order)

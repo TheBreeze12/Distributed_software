@@ -2,3 +2,5 @@
 __pycache__/
 Learning/
 .env
+dist/
+node_modules/

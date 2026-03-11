@@ -31,8 +31,8 @@ async def lifespan(app: FastAPI):
     print("🛑 应用关闭中...")
 
 
-app=FastAPI(title="智能生活服务工具API",
-    description="提供餐饮营养分析、出行规划等AI驱动的生活服务",
+app=FastAPI(title="秒杀商城后端API",
+    description="这是一个使用FastAPI构建的秒杀商城后端API，提供用户注册、登录、商品浏览、下单等功能。",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

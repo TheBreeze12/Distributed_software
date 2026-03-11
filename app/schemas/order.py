@@ -1,7 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,Field
 from typing import List
+from decimal import Decimal
+from datetime import datetime
 class OrderSchema(BaseModel):
-    pass
+    id :  int
+    u_id :  int
+    p_id :  int
+    quantity :  int
+    order_amount :  Decimal
+    status :  int
+    created_at :  datetime
+    updated_at :  datetime
+
 
 class OrderResponse(BaseModel):
     msg:str
@@ -9,4 +19,5 @@ class OrderResponse(BaseModel):
     data:OrderSchema|List[OrderSchema]|None
 
 class OrderCreateRequest(BaseModel):
-    pass
+    p_name : str = Field(...,description="商品名")
+    quantity: int = Field(gt=0)

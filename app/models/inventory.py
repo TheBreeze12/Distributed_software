@@ -9,7 +9,7 @@ class Inventory(Base):
     id : Mapped[int] = mapped_column(primary_key=True,index=True)
     p_id : Mapped[int] = mapped_column(ForeignKey("products.id"),unique=True,index=True)
     total_stock : Mapped[int] =mapped_column(nullable=True)
-    availbale_stock : Mapped[int] =mapped_column(nullable=True)
+    available_stock : Mapped[int] =mapped_column(nullable=True)
     locked_stock : Mapped[int] =mapped_column(nullable=True)
     created_at : Mapped[datetime] = mapped_column(DateTime,default=datetime.utcnow,nullable=False)
     updated_at : Mapped[datetime] = mapped_column(DateTime,default=datetime.utcnow,onupdate=datetime.utcnow,nullable=False)
