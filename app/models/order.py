@@ -14,3 +14,5 @@ class Order(Base):
     status : Mapped[int] = mapped_column(nullable=False)
     created_at : Mapped[datetime] = mapped_column(DateTime,default=datetime.utcnow,nullable=False)
     updated_at : Mapped[datetime] = mapped_column(DateTime,default=datetime.utcnow,onupdate=datetime.utcnow,nullable=False)
+    payment_time: Mapped[datetime] =mapped_column(DateTime,nullable=True,default=None)
+    cancelled_time: Mapped[datetime] =mapped_column(DateTime,nullable=True,default=None)

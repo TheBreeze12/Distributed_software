@@ -15,7 +15,6 @@ def get_product_name_service(db : Session, name :str):
     return get_product_by_name(db,name)
 
 
-
 def add_product_service(db:Session,name:str,price:float):
     product=get_product_by_name(db,name)
     if product:

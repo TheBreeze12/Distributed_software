@@ -13,3 +13,14 @@ def create_user(db:Session,username:str,password_hash:str,email:str)->User:
 
 def get_user_by_id(db:Session,id : int):
     return db.query(User).filter(User.id==id).first()
+
+def update_user(db:Session,id : int,**kwargs):
+    user=db.query(User).filter(User.id==id).first()
+    if not user:
+        return None
+    for key,value in kwargs.items():
+        if hasattr(user,key):
+            setattr(user,key,value)
+    db.commit()
+    db.refresh(user)
+    return user

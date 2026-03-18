@@ -22,3 +22,11 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type : str = "bearer"
+
+class ChangeUserRequest(BaseModel):
+    username:str |None=None
+    email: EmailStr|None = None
+
+class PasswordRequest(BaseModel):
+    password_old :str
+    password_new:str

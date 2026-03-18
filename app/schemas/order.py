@@ -11,7 +11,8 @@ class OrderSchema(BaseModel):
     status :  int
     created_at :  datetime
     updated_at :  datetime
-
+    payment_time:datetime|None=None
+    cancelled_time:datetime|None=None
 
 class OrderResponse(BaseModel):
     msg:str

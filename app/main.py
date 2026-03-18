@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 load_dotenv()
-from app.api.v1 import user,product,order
+from app.api.v1 import user,product,order,inventory
 from contextlib import asynccontextmanager
 from app.database import check_db_connection,init_db
 
@@ -41,6 +41,7 @@ app=FastAPI(title="秒杀商城后端API",
 app.include_router(user.router)
 app.include_router(product.router)
 app.include_router(order.router)
+app.include_router(inventory.router)
 @app.get("/")
 def get_root():
     return{
