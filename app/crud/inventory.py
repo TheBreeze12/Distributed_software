@@ -37,3 +37,6 @@ def get_inventory_by_id(db:Session,id:int):
 def get_inventory_by_pid(db:Session,p_id:int):
     inventory=db.query(Inventory).filter(Inventory.p_id==p_id).first()
     return inventory
+
+def get_all_inventory(db:Session):
+    return db.query(Inventory).all()

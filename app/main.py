@@ -4,6 +4,10 @@ load_dotenv()
 from app.api.v1 import user,product,order,inventory
 from contextlib import asynccontextmanager
 from app.database import check_db_connection,init_db
+from app.core.redis_client import redis_client
+from app.api.deps import get_db
+from app.db.session import SessionLocal
+from app.services import redis_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +28,23 @@ async def lifespan(app: FastAPI):
             print(f"⚠️  数据库表初始化警告: {e}")
     else:
         print("⚠️  警告：数据库连接失败，请检查配置")
+
+    try:
+        redis_client.ping()
+        print("Redis连接正常")
+    except Exception as e:
+        print("Redis连接失败"+str(e))
+
+    try:
+        db=SessionLocal()
+        count=redis_service.warm_up_stock_to_redis(db)
+        print("库存预热成功"+str(count)+"件")
+        count=redis_service.warm_up_product_to_redis(db)
+        print("商品预热成功"+str(count)+"件")
+    except Exception as e:
+        print("库存预热失败"+str(e))
+    finally:
+        db.close()
 
     yield  # 应用运行期间
 
