@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 load_dotenv()
-from app.api.v1 import user,product,order,inventory
+from app.api.v1 import user,product,order,inventory,db_split
 from contextlib import asynccontextmanager
 from app.database import check_db_connection,init_db
 from app.core.redis_client import redis_client
@@ -63,6 +63,7 @@ app.include_router(user.router)
 app.include_router(product.router)
 app.include_router(order.router)
 app.include_router(inventory.router)
+app.include_router(db_split.router)
 @app.get("/")
 def get_root():
     return{

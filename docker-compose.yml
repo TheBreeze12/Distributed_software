@@ -1,22 +1,48 @@
 name: seckill-system
 
 services:
-  mysql:
+  mysql-master:
     image: mysql:8.0
-    container_name: seckill-mysql
+    container_name: seckill-mysql-master
     environment:
       MYSQL_ROOT_PASSWORD: root123
+      MYSQL_ROOT_HOST: "%"
       MYSQL_DATABASE: commerce
     command: --default-authentication-plugin=mysql_native_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
       interval: 10s
       timeout: 5s
       retries: 15
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_master_data:/var/lib/mysql
+      - ./mysql/master/conf.d/master.cnf:/etc/mysql/conf.d/master.cnf:ro
+      - ./mysql/master/init:/docker-entrypoint-initdb.d:ro
+
+  mysql-slave:
+    image: mysql:8.0
+    container_name: seckill-mysql-slave
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: commerce
+    command: --default-authentication-plugin=mysql_native_password
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    volumes:
+      - mysql_slave_data:/var/lib/mysql
+      - ./mysql/slave/conf.d/slave.cnf:/etc/mysql/conf.d/slave.cnf:ro
+      - ./mysql/slave/init:/docker-entrypoint-initdb.d:ro
 
   redis:
     image: redis:7-alpine
@@ -35,17 +61,24 @@ services:
       dockerfile: Dockerfile
     container_name: seckill-backend1
     environment:
-      DB_HOST: mysql
+      DB_HOST: mysql-master
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: root123
       DB_NAME: commerce
+      DB_READ_HOST: mysql-slave
+      DB_READ_PORT: 3306
+      DB_READ_USER: root
+      DB_READ_PASSWORD: root123
+      DB_READ_NAME: commerce
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
       SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
     depends_on:
-      mysql:
+      mysql-master:
+        condition: service_healthy
+      mysql-slave:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -56,17 +89,24 @@ services:
       dockerfile: Dockerfile
     container_name: seckill-backend2
     environment:
-      DB_HOST: mysql
+      DB_HOST: mysql-master
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: root123
       DB_NAME: commerce
+      DB_READ_HOST: mysql-slave
+      DB_READ_PORT: 3306
+      DB_READ_USER: root
+      DB_READ_PASSWORD: root123
+      DB_READ_NAME: commerce
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
       SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
     depends_on:
-      mysql:
+      mysql-master:
+        condition: service_healthy
+      mysql-slave:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -84,4 +124,5 @@ services:
       - ./frontend/static:/usr/share/nginx/html/static:ro
 
 volumes:
-  mysql_data:
+  mysql_master_data:
+  mysql_slave_data:

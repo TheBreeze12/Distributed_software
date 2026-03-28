@@ -1,6 +1,6 @@
 from app.db.base import Base
 from sqlalchemy import text
-from app.db.session import engine
+from app.db.session import engine, read_engine
 
 
 def init_db():
@@ -29,7 +29,9 @@ def check_db_connection():
         with engine.connect() as conn:
             # SQLAlchemy 2.0 需要使用 text() 包装 SQL 语句
             conn.execute(text("SELECT 1"))
-        print("✅ 数据库连接成功！")
+        with read_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("✅ 数据库读写连接成功！")
         return True
     except Exception as e:
         print(f"❌ 数据库连接失败: {str(e)}")
