@@ -1,0 +1,87 @@
+name: seckill-system
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: seckill-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: commerce
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: seckill-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seckill-backend1
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root123
+      DB_NAME: commerce
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  backend2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seckill-backend2
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root123
+      DB_NAME: commerce
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: seckill-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend1
+      - backend2
+    volumes:
+      - ./nginx/docker.nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/static:/usr/share/nginx/html/static:ro
+
+volumes:
+  mysql_data:

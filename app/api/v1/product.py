@@ -9,16 +9,16 @@ def get_product_id(id:int,db=Depends(get_db)):
     data=get_product_service(db,id)
     return {
         "msg":'success',
-        "code" :'200',
+        "code" :200,
         "data":data
     }
 
 @router.get('/name',response_model=ProductResponse)
-def get_product_id(name:str,db=Depends(get_db)):
+def get_product_name(name:str,db=Depends(get_db)):
     data=get_product_name_service(db,name)
     return {
         "msg":'success',
-        "code" :'200',
+        "code" :200,
         "data":data
     }
 
@@ -27,7 +27,17 @@ def get_all_products(db=Depends(get_db)):
     data=get_product_service(db)
     return {
         "msg":'success',
-        "code" :'200',
+        "code" :200,
+        "data":data
+    }
+
+
+@router.get('/{id}',response_model=ProductResponse)
+def get_product_detail(id:int,db=Depends(get_db)):
+    data=get_product_service(db,id)
+    return {
+        "msg":'success',
+        "code" :200,
         "data":data
     }
 
@@ -36,6 +46,6 @@ def add_one_product(pay_load:ProductAddRequest,db=Depends(get_db)):
     data=add_product_service(db,pay_load.name,pay_load.price)
     return {
         "msg":'success',
-        "code" :'200',
+        "code" :200,
         "data":data
     }

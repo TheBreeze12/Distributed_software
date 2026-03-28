@@ -13,6 +13,7 @@ def init_db():
     import app.models.user
     import app.models.product
     import app.models.order
+    import app.models.inventory
 
     # 创建所有表
     Base.metadata.create_all(bind=engine)
