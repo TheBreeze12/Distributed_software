@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>秒杀系统静态页压测示例</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>秒杀系统静态页</h1>
+      <p>这个页面用于 Nginx 动静分离实验中的静态资源压测。</p>
+
+      <section class="card">
+        <h2>前端交互</h2>
+        <p>点击按钮会执行一段本地 JavaScript，不会请求后端。</p>
+        <button id="pingButton" type="button">点我测试静态 JS 响应</button>
+        <p id="resultText" class="result">等待点击...</p>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
