@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 import time
+from datetime import datetime
 from decimal import Decimal
 
 from kafka import KafkaConsumer, KafkaProducer
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 KAFKA_ENABLED = os.getenv("KAFKA_ENABLED", "true").lower() == "true"
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9092")
 KAFKA_ORDER_TOPIC = os.getenv("KAFKA_ORDER_TOPIC", "seckill-order-create")
+KAFKA_ORDER_PAID_TOPIC = os.getenv("KAFKA_ORDER_PAID_TOPIC", "seckill-order-paid")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "seckill-order-workers")
 
 _producer = None
@@ -51,6 +53,15 @@ def publish_order_created_event(payload: dict) -> None:
         raise KafkaUnavailableError("Kafka disabled")
     producer = get_producer()
     future = producer.send(KAFKA_ORDER_TOPIC, payload)
+    future.get(timeout=10)
+    producer.flush(timeout=10)
+
+
+def publish_order_paid_event(payload: dict) -> None:
+    if not KAFKA_ENABLED:
+        raise KafkaUnavailableError("Kafka disabled")
+    producer = get_producer()
+    future = producer.send(KAFKA_ORDER_PAID_TOPIC, payload)
     future.get(timeout=10)
     producer.flush(timeout=10)
 
@@ -107,16 +118,54 @@ def process_order_message(payload: dict) -> None:
         db.close()
 
 
+def process_order_paid_message(payload: dict) -> None:
+    required_fields = ["order_id"]
+    if any(field not in payload for field in required_fields):
+        raise ValueError("paid payload missing required fields")
+
+    order_id = str(payload["order_id"])
+    db = WriteSessionLocal()
+    try:
+        order = db.query(Order).filter(Order.order_id == order_id).with_for_update().first()
+        if not order:
+            raise ValueError("order not found")
+
+        # 已支付消息重复消费时直接幂等返回
+        if order.status == 1:
+            return
+        if order.status == 4:
+            raise ValueError("order cancelled")
+
+        inventory = db.query(Inventory).filter(Inventory.p_id == order.p_id).with_for_update().first()
+        if not inventory:
+            raise ValueError("inventory not found")
+        if inventory.locked_stock < order.quantity:
+            raise ValueError("insufficient locked stock")
+
+        inventory.locked_stock -= order.quantity
+        order.status = 1
+        now = datetime.utcnow()
+        order.payment_time = now
+        order.updated_at = now
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 def _consume_loop() -> None:
     while not _stop_event.is_set():
         consumer = None
         try:
             consumer = KafkaConsumer(
                 KAFKA_ORDER_TOPIC,
+                KAFKA_ORDER_PAID_TOPIC,
                 bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
                 group_id=KAFKA_CONSUMER_GROUP,
                 value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-                enable_auto_commit=True,
+                enable_auto_commit=False,
                 auto_offset_reset="earliest",
                 consumer_timeout_ms=1000,
             )
@@ -126,7 +175,13 @@ def _consume_loop() -> None:
                     if _stop_event.is_set():
                         break
                     try:
-                        process_order_message(message.value)
+                        if message.topic == KAFKA_ORDER_TOPIC:
+                            process_order_message(message.value)
+                        elif message.topic == KAFKA_ORDER_PAID_TOPIC:
+                            process_order_paid_message(message.value)
+                        else:
+                            logger.warning("Unknown topic received: %s", message.topic)
+                        consumer.commit()
                     except Exception as exc:  # noqa: BLE001
                         logger.exception("Order consume failed: %s", exc)
                 time.sleep(0.05)

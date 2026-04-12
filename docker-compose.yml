@@ -104,6 +104,7 @@ services:
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_ORDER_TOPIC: seckill-order-create
+      KAFKA_ORDER_PAID_TOPIC: seckill-order-paid
       KAFKA_CONSUMER_GROUP: seckill-order-workers
       SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
     depends_on:
@@ -136,6 +137,7 @@ services:
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_ORDER_TOPIC: seckill-order-create
+      KAFKA_ORDER_PAID_TOPIC: seckill-order-paid
       KAFKA_CONSUMER_GROUP: seckill-order-workers
       SECRET_KEY: 3x@mpl3$$eCreT!Key2026$$gHjklQwErTyUiOpZxcVbnM9
     depends_on:

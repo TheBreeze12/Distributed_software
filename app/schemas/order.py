@@ -39,3 +39,15 @@ class OrderCreateResponse(BaseModel):
     msg: str
     code: int
     data: OrderCreateAccepted
+
+
+class OrderPayAccepted(BaseModel):
+    order_id: str
+    status: str
+    message: str
+
+
+class OrderPayResponse(BaseModel):
+    msg: str
+    code: int
+    data: OrderPayAccepted

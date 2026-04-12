@@ -63,6 +63,34 @@ def get_order_by_order_id(db:Session,order_id:str):
 def get_orders_by_user_id(db:Session,u_id:int):
     return order_crud.get_orders_by_uid(db,u_id)
 
+
+def pay_order(db: Session, order_id: str):
+    order = order_crud.get_order_by_order_id(db, order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='订单没有找到')
+    if order.status == PAID:
+        return {
+            "order_id": order_id,
+            "status": "PAID",
+            "message": "订单已支付",
+        }
+    if order.status == CANCELLED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='订单已取消，无法支付')
+
+    try:
+        kafka_order_service.publish_order_paid_event({"order_id": order_id})
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"支付请求发送失败: {e}",
+        )
+
+    return {
+        "order_id": order_id,
+        "status": "PAYING",
+        "message": "支付处理中",
+    }
+
 def confirm_order(db,o_id):
     order=order_crud.update_order(db,o_id,status=PAID,
                             updated_at=datetime.utcnow(),

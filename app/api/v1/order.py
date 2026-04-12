@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends
 from app.models.order import Order
-from app.schemas.order import OrderResponse,OrderCreateRequest,OrderCreateResponse
+from app.schemas.order import OrderResponse,OrderCreateRequest,OrderCreateResponse,OrderPayResponse
 from app.services import order_service
 from app.services.auth_service import get_current_user
 from app.api.deps import get_db_read, get_db_write
@@ -13,6 +13,16 @@ def create_order(payload:OrderCreateRequest,current_user=Depends(get_current_use
         "msg":'success',
         "code" :200,
         "data":order
+    }
+
+
+@router.post("/pay/{order_id}",response_model=OrderPayResponse)
+def pay_order(order_id:str,current_user=Depends(get_current_user),db=Depends(get_db_write)):
+    result = order_service.pay_order(db,order_id)
+    return {
+        "msg":'success',
+        "code" :200,
+        "data":result
     }
 
 @router.post("/confirm/{o_id}",response_model=OrderResponse)
