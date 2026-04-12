@@ -31,7 +31,7 @@ def delete_inventory(db:Session,id:int):
 
 
 def get_inventory_by_id(db:Session,id:int):
-    inventory=db.query(Inventory).filter(Inventory.id==u_id).first()
+    inventory=db.query(Inventory).filter(Inventory.id==id).first()
     return inventory
 
 def get_inventory_by_pid(db:Session,p_id:int):

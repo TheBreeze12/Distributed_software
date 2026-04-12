@@ -8,6 +8,7 @@ from app.core.redis_client import redis_client
 from app.api.deps import get_db
 from app.db.session import SessionLocal
 from app.services import redis_service
+from app.services import kafka_order_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,9 +47,16 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    try:
+        kafka_order_service.start_order_consumer()
+        print("Kafka订单消费者已启动")
+    except Exception as e:
+        print("Kafka消费者启动失败"+str(e))
+
     yield  # 应用运行期间
 
     # 关闭时执行（如果需要清理资源，在这里添加）
+    kafka_order_service.stop_order_consumer()
     print("🛑 应用关闭中...")
 
 

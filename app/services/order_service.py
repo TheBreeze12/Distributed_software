@@ -1,12 +1,11 @@
 from sqlalchemy.orm import Session
-from app.models.order import Order
-from app.models.inventory import Inventory
-from app.models.product import Product
 from fastapi import HTTPException,status
-from decimal import Decimal
 from app.crud import order as order_crud
 from app.crud.product import get_product_by_name
 from app.services import inventory_service
+from app.services import kafka_order_service
+from app.services import redis_service
+from app.services.id_generator import generate_order_id
 from datetime import datetime
 PEND_PAYMENT=0
 PAID=1
@@ -18,13 +17,36 @@ def create_order(db:Session,u_id:int,p_name:str,quantity:int):
     if not product:
         raise HTTPException(status_code=404,detail="商品不存在")
 
-    re=inventory_service.deduct_inventory(db,product.id,quantity)
-    if re==False:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail='扣除库存失败')
+    ok,msg = redis_service.reserve_seckill_stock(u_id=u_id,p_id=product.id,quantity=quantity)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail=msg)
 
-    order_amount=product.price*quantity
-    order=order_crud.create_order(db,u_id,product.id,quantity,order_amount,status=PEND_PAYMENT)
-    return order
+    order_id = generate_order_id()
+    order_amount = float(product.price * quantity)
+    payload = {
+        "order_id": order_id,
+        "u_id": u_id,
+        "p_id": product.id,
+        "quantity": quantity,
+        "order_amount": order_amount,
+    }
+
+    try:
+        kafka_order_service.publish_order_created_event(payload)
+    except Exception as e:  # noqa: BLE001
+        redis_service.rollback_seckill_reservation(u_id=u_id,p_id=product.id,quantity=quantity)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"下单排队失败: {e}",
+        )
+
+    return {
+        "order_id": order_id,
+        "status": "PROCESSING",
+        "u_id": u_id,
+        "p_id": product.id,
+        "quantity": quantity,
+    }
 
 def get_user_order(db:Session,u_id:int):
     orders=order_crud.get_orders_by_uid(db,u_id)
@@ -32,6 +54,14 @@ def get_user_order(db:Session,u_id:int):
 
 def get_order_by_id(db:Session,id:int):
     return order_crud.get_order_by_id(db,id)
+
+
+def get_order_by_order_id(db:Session,order_id:str):
+    return order_crud.get_order_by_order_id(db,order_id)
+
+
+def get_orders_by_user_id(db:Session,u_id:int):
+    return order_crud.get_orders_by_uid(db,u_id)
 
 def confirm_order(db,o_id):
     order=order_crud.update_order(db,o_id,status=PAID,
@@ -58,4 +88,5 @@ def cancel_order(db,o_id):
     re=inventory_service.rollback_inventory(db,order.p_id,order.quantity)
     if not re:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail='取消失败')
+    redis_service.increase_stock_cache(order.p_id,order.quantity)
     return order

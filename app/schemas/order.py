@@ -1,9 +1,12 @@
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,ConfigDict
 from typing import List
 from decimal import Decimal
 from datetime import datetime
 class OrderSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id :  int
+    order_id: str
     u_id :  int
     p_id :  int
     quantity :  int
@@ -22,3 +25,17 @@ class OrderResponse(BaseModel):
 class OrderCreateRequest(BaseModel):
     p_name : str = Field(...,description="商品名")
     quantity: int = Field(gt=0)
+
+
+class OrderCreateAccepted(BaseModel):
+    order_id: str
+    status: str
+    u_id: int
+    p_id: int
+    quantity: int
+
+
+class OrderCreateResponse(BaseModel):
+    msg: str
+    code: int
+    data: OrderCreateAccepted

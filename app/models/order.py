@@ -1,12 +1,17 @@
 from app.db.base import Base
 from sqlalchemy.orm import Mapped,mapped_column
-from sqlalchemy import DateTime,String,ForeignKey,DECIMAL
+from sqlalchemy import DateTime,String,ForeignKey,DECIMAL,UniqueConstraint
 from decimal import Decimal
 from datetime import datetime
 
 class Order(Base):
     __tablename__='orders'
+    __table_args__ = (
+        UniqueConstraint("order_id", name="uq_orders_order_id"),
+        UniqueConstraint("u_id", "p_id", name="uq_orders_user_product"),
+    )
     id : Mapped[int] = mapped_column(index=True,primary_key=True)
+    order_id: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
     u_id : Mapped[int] = mapped_column(ForeignKey("users.id"))
     p_id : Mapped[int] = mapped_column(ForeignKey("products.id"))
     quantity : Mapped[int] = mapped_column(nullable=False)
